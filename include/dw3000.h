@@ -37,24 +37,30 @@
 #define FINAL_MSG_FINAL_TX_TS_IDX 18
 #define FINAL_MSG_TS_LEN 5
 
-// Register Addresses
-#define SYS_STATUS_ID 0x03
-#define RX_FINFO_ID 0x07
-#define RXFLEN_MASK 0x3FF
+// Register Addresses (DW3000)
+#define DEV_ID            0x00
+#define SYS_CFG           0x04
+#define SYS_STATUS        0x03
+#define RX_FINFO          0x10
+#define RX_DATA           0x24
+#define TX_DATA           0x14
+#define SYS_CTRL          0x0D
+#define GPIO_CTRL         0x26
+#define TX_FCTRL          0x08
+#define RX_TIME           0x15 // RX_TIME register for 5-byte timestamp
 
 // Status Bits
-#define SYS_STATUS_RXFCG_BIT_MASK 0x4000
+#define SYS_STATUS_RXFCG_BIT_MASK 0x00004000 // Frame Check Good
 #define SYS_STATUS_ALL_RX_ERR 0xFF00
 #define SYS_STATUS_ALL_RX_TO 0x0800
-#define SYS_STATUS_TXFRS_BIT_MASK 0x80
+#define SYS_STATUS_TXFRS_BIT_MASK 0x00000080 // Frame Sent
 
 // Type definitions
 typedef void (*DistanceCallback)();
 
 class DW3000Class {
 private:
-    static const uint8_t SPI_BUFFER_LEN = 255;
-    uint8_t SPI_buffer[SPI_BUFFER_LEN];
+    SPISettings spiSettings = SPISettings(20000000, MSBFIRST, SPI_MODE0);
     
     uint8_t _rst_pin;
     uint8_t _ss_pin;
@@ -65,6 +71,16 @@ private:
     float _last_rssi;
     DistanceCallback _new_range_callback;
     
+    // Internal SPI functions
+    uint32_t read(uint16_t addr, uint16_t offset);
+    void write(uint16_t addr, uint16_t offset, uint32_t data);
+    void readBytes(uint16_t addr, uint16_t offset, uint8_t *buffer, uint16_t len);
+    void writeBytes(uint16_t addr, uint16_t offset, const uint8_t *buffer, uint16_t len);
+    
+    // Helper functions for 32-bit register access
+    uint32_t read32bitreg(uint16_t addr);
+    void write32bitreg(uint16_t addr, uint32_t data);
+
 public:
     DW3000Class();
     
@@ -76,18 +92,9 @@ public:
     // Main loop
     void loop();
     
-    // SPI Communication
-    void begin_spi();
-    bool checkSPI();
-    uint32_t read(uint16_t addr, uint16_t offset);
-    void write(uint16_t addr, uint16_t offset, uint32_t data);
-    void readBytes(uint16_t addr, uint16_t offset, uint8_t *buffer, uint16_t len);
-    void writeBytes(uint16_t addr, uint16_t offset, const uint8_t *buffer, uint16_t len);
-    
     // Chip Control
     void hardReset();
     void softReset();
-    bool checkForIDLE();
     void init();
     
     // RX/TX Operations
@@ -100,8 +107,6 @@ public:
     int starttx(uint8_t mode);
     uint64_t get_rx_timestamp_u64();
     void setdelayedtrxtime(uint32_t time);
-    uint32_t read32bitreg(uint16_t addr);
-    void write32bitreg(uint16_t addr, uint32_t data);
     uint32_t readrxdata(uint8_t *buffer, uint16_t len, uint16_t offset);
     
     // Range/Distance functions
@@ -111,8 +116,6 @@ public:
     
     // LED Control
     void setupGPIO();
-    void pullLEDHigh(uint8_t pin);
-    void pullLEDLow(uint8_t pin);
     void setleds(uint8_t mode);
     
     // Callbacks
@@ -122,4 +125,3 @@ public:
 extern DW3000Class DW3000;
 
 #endif // DW3000_H
-
