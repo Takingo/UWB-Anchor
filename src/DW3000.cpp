@@ -366,18 +366,11 @@ void DW3000Class::setdelayedtrxtime(uint32_t time) {
 }
 
 uint32_t DW3000Class::read32bitreg(uint16_t addr) {
-    uint8_t buffer[4];
-    readBytes(addr, 0x00, buffer, 4);
-    return (buffer[3] << 24) | (buffer[2] << 16) | (buffer[1] << 8) | buffer[0];
+    return read(addr, 0x00);
 }
 
 void DW3000Class::write32bitreg(uint16_t addr, uint32_t data) {
-    uint8_t buffer[4];
-    buffer[0] = (uint8_t)(data & 0xFF);
-    buffer[1] = (uint8_t)((data >> 8) & 0xFF);
-    buffer[2] = (uint8_t)((data >> 16) & 0xFF);
-    buffer[3] = (uint8_t)((data >> 24) & 0xFF);
-    writeBytes(addr, 0x00, buffer, 4);
+    write(addr, 0x00, data);
 }
 
 uint32_t DW3000Class::readrxdata(uint8_t *buffer, uint16_t len, uint16_t offset) {
